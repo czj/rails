@@ -93,7 +93,7 @@ class Hash
   # # => {"person"=>{"name"=>"Rob", "age"=>"28"}}
   # ```
   def deep_stringify_keys
-    deep_transform_keys { |k| Symbol === k ? k.name : k.to_s }
+    _deep_stringify_keys_in_object(self)
   end
 
   # Destructively converts all keys to strings.
@@ -114,7 +114,7 @@ class Hash
   # # => {:person=>{:name=>"Rob", :age=>"28"}}
   # ```
   def deep_symbolize_keys
-    deep_transform_keys { |key| key.to_sym rescue key }
+    _deep_symbolize_keys_in_object(self)
   end
 
   # Destructively converts all keys to symbols, as long as they respond
@@ -136,6 +136,38 @@ class Hash
         result
       when Array
         object.map { |e| _deep_transform_keys_in_object(e, &block) }
+      else
+        object
+      end
+    end
+
+    # Same traversal as _deep_transform_keys_in_object, with the key
+    # conversion inlined instead of yielded to a block.
+    def _deep_stringify_keys_in_object(object)
+      case object
+      when Hash
+        result = self.class.new
+        object.each do |key, value|
+          result[Symbol === key ? key.name : key.to_s] = _deep_stringify_keys_in_object(value)
+        end
+        result
+      when Array
+        object.map { |e| _deep_stringify_keys_in_object(e) }
+      else
+        object
+      end
+    end
+
+    def _deep_symbolize_keys_in_object(object)
+      case object
+      when Hash
+        result = self.class.new
+        object.each do |key, value|
+          result[(key.to_sym rescue key)] = _deep_symbolize_keys_in_object(value)
+        end
+        result
+      when Array
+        object.map { |e| _deep_symbolize_keys_in_object(e) }
       else
         object
       end
