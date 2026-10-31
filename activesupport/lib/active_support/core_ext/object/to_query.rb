@@ -97,9 +97,11 @@ class Hash
   # The string pairs "key=value" that conform the query string
   # are sorted lexicographically in ascending order.
   def to_query(namespace = nil)
-    query = filter_map do |key, value|
+    query = []
+    each do |key, value|
       next if (value.is_a?(Hash) || value.is_a?(Array)) && value.empty?
-      value.to_query(namespace ? "#{namespace}[#{key}]" : key)
+      query_part = value.to_query(namespace ? "#{namespace}[#{key}]" : key)
+      query << query_part if query_part
     end
 
     query.sort! unless namespace.to_s.include?("[]")
