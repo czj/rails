@@ -27,6 +27,19 @@ class OutputSafetyHelperTest < ActionView::TestCase
     assert_equal "<p>foo</p><br /><p>bar</p>", joined
   end
 
+  test "safe_join returns a buffer that can be appended to without changing later joins" do
+    links = [raw('<a href="/users/alice">Alice</a>'), raw('<a href="/users/bob">Bob</a>')]
+    joined = safe_join(links, ", ")
+    original = String.new(joined)
+
+    assert_not_predicate joined, :frozen?
+    joined << "<b>"
+
+    assert_equal original + "&lt;b&gt;", joined
+    assert_predicate joined, :html_safe?
+    assert_equal original, safe_join(links, ", ")
+  end
+
   test "safe_join should work recursively similarly to Array.join" do
     joined = safe_join(["a", ["b", "c"]], ":")
     assert_equal "a:b:c", joined

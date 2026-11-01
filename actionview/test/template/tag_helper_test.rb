@@ -292,6 +292,8 @@ class TagHelperTest < ActionView::TestCase
       -> { tag.div("Content", id: "post_1", class: "card") },
       -> { tag.input(type: "hidden", name: "authenticity_token") },
       -> { tag("input", type: "hidden", name: "authenticity_token") },
+      -> { token_list("btn", "btn-primary", { active: true }, "w-100") },
+      -> { cdata_section("var greeting = 'Hello from alice';") },
     ].each do |build|
       html = build.call
       original = String.new(html)
