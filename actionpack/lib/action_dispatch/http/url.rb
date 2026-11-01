@@ -202,7 +202,6 @@ module ActionDispatch
           def build_host_url(host, port, protocol, options, path)
             # Keep regexp encoding validation while avoiding captures for ordinary Strings.
             if String === host && host.instance_of?(String) && !host.empty? && !host.match?(/[:\[]/)
-              host = host.dup
               port = nil unless options.key?(:port)
             elsif match = host.match(HOST_REGEXP)
               protocol_from_host = match[1] if protocol.nil?
@@ -255,23 +254,23 @@ module ActionDispatch
           end
 
           def normalize_host(_host, options)
-            return _host unless named_host?(_host)
-
-            tld_length = options[:tld_length] || self.tld_length
-            subdomain  = options.fetch :subdomain, true
-            domain     = options[:domain]
+            subdomain = options.fetch :subdomain, true
+            domain    = options[:domain]
             subdomain_from_host = subdomain == true
 
             return _host if subdomain_from_host && domain.nil?
+            return _host unless named_host?(_host)
+
+            tld_length = options[:tld_length] || self.tld_length
 
             host = +""
             if subdomain_from_host
-              host << extract_subdomains_from(_host, tld_length).join(".")
+              host << extract_subdomains_from(_host.dup, tld_length).join(".")
             elsif subdomain
               host << subdomain.to_param
             end
             host << "." unless host.empty?
-            host << (domain || extract_domain_from(_host, tld_length))
+            host << (domain || extract_domain_from(_host.dup, tld_length))
             host
           end
 
