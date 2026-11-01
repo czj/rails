@@ -1,3 +1,11 @@
+*   Deprecate `ActionController::HttpAuthentication::Token::TOKEN_REGEX`.
+
+    Token authentication no longer uses it since it accepts the `DPoP` scheme
+    and any scheme given in `scheme:`. Match the scheme captured by
+    `AUTH_SCHEME_REGEX` against `SCHEMES`, ignoring case, instead.
+
+    *Clément Joubert*
+
 *   Compute `action_methods` without converting every public instance method to a String.
 
     Speeds up eager loading for applications whose controllers include the url helpers.
