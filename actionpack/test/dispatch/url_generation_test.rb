@@ -96,11 +96,17 @@ module TestUrlGeneration
         def self.domain_from(host, _tld_length)
           host.replace("example.org")
         end
+
+        def self.subdomains_from(host, _tld_length)
+          host.replace("api.example.org").split(".").first(1)
+        end
       end
 
       [+"original.example.com", "original.example.com"].each do |host|
         ActionDispatch::Http::URL.with(domain_extractor: extractor) do
           assert_equal "https://cdn.example.org/foo", foo_url(host: host, protocol: "https", subdomain: "cdn")
+          assert_equal "https://api.example.net/foo", foo_url(host: host, protocol: "https", domain: "example.net")
+          assert_equal "https://original.example.com/foo", foo_url(host: host, protocol: "https")
         end
 
         assert_equal "original.example.com", host
