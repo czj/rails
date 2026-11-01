@@ -1,3 +1,13 @@
+*   Filter parameters from the message logged when a command can't be handled.
+
+    When a channel action raised, the error log included the raw WebSocket message,
+    so values hidden by `filter_parameters` in the action's debug log were written
+    in clear at the error level. The message, its identifier and its data are now
+    filtered, and a message that can't be decoded or filtered is replaced by
+    `[FILTERED]` and its size.
+
+    *Clément Joubert*
+
 *   Process each connection's commands in the order the client sent them.
 
     Commands were handed to the worker pool independently, so two commands from
