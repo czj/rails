@@ -51,7 +51,9 @@ considerations.
 
 Each database configuration can have its own connection pool. Roles, replicas,
 and shards can increase the total number of database connections your
-application may open. Make sure the pool sizes in `config/database.yml` match
+application may open. So can libraries that define their own abstract class,
+such as Solid Cache, Solid Queue, and Solid Cable when given their own database.
+Make sure the pool sizes in `config/database.yml` match
 your web server and job worker concurrency, and that your database servers can
 handle the total number of connections.
 
@@ -70,7 +72,8 @@ or reconcile data later.
 
 ##### No Foreign Keys Across Databases
 
-Database-level foreign keys generally cannot span separate database clusters.
+Database-level foreign keys generally cannot span separate databases, even on
+the same PostgreSQL server.
 Keep data that requires strict database-level integrity in the same database
 when possible, or enforce cross-database consistency in your application.
 
@@ -210,6 +213,10 @@ When Rails loads the `animals` configuration, it uses
 See [Configuring a Database](configuring.html#configuring-a-database) for
 details about how the configurations are merged.
 
+The plain `DATABASE_URL` variable applies to the `primary` configuration alone:
+other configurations read `[CONFIGURATION_NAMESPACE]_DATABASE_URL`, for the
+current environment.
+
 #### Migration Paths and Schema Dumps
 
 For new writer databases, you need to set the `migrations_paths` key to
@@ -221,6 +228,9 @@ production:
   animals:
     migrations_paths: db/animals_migrate
 ```
+
+Without `migrations_paths`, the `animals` database also uses `db/migrate`, so
+`bin/rails db:migrate` would run the primary database's migrations against it.
 
 You can also configure the schema dump file by setting `schema_dump` to a
 custom schema file name. By default, the primary configuration uses
@@ -488,6 +498,10 @@ This creates the migration in `db/animals_migrate`. Without
 `--database animals`, the migration would be generated in the default migration
 path.
 
+WARNING: The generator looks up `animals` in the current environment, usually
+`development`. If `animals` is only configured for `production`, as in the
+examples above, the migration silently lands in `db/migrate`.
+
 #### Generating Models and Scaffolds
 
 The model and scaffold generators also take the `--database` option:
@@ -740,16 +754,18 @@ ActiveRecord::Base.connected_to(role: :nonexistent) do
 end
 ```
 
-The error will look like:
+The error is raised when the first query runs inside the block, and will look
+like:
 
-`ActiveRecord::ConnectionNotEstablished (No connection pool for 'ActiveRecord::Base' found for the 'nonexistent' role.)`
+`ActiveRecord::ConnectionNotDefined (No database connection defined for 'nonexistent' role.)`
 
-If you want Active Record to prevent write queries while using a role, pass
-`prevent_writes: true`. This prevents queries that look like writes from being
-sent to the database:
+The `reading` role prevents write queries by default: queries that look like
+writes raise `ActiveRecord::ReadOnlyError` instead of being sent to the
+database. To get the same protection while using the writer, pass
+`prevent_writes: true`:
 
 ```ruby
-ActiveRecord::Base.connected_to(role: :reading, prevent_writes: true) do
+ActiveRecord::Base.connected_to(role: :writing, prevent_writes: true) do
   # The following will raise an error:
   Person.create
 end
@@ -989,7 +1005,7 @@ end
 ```
 
 If no connection exists for the requested role and shard, Rails raises
-`ActiveRecord::ConnectionNotEstablished`.
+`ActiveRecord::ConnectionNotDefined` when a query runs.
 
 To switch only the primary database cluster, call `connected_to` on
 `ApplicationRecord`:
@@ -1006,9 +1022,9 @@ connection classes globally.
 
 ## Handling Associations Across Databases
 
-Databases cannot perform SQL joins across separate database clusters. If an
-association would require Rails to join tables that live in different databases,
-the query cannot be sent as a single SQL join.
+A SQL query runs on one database connection, so it cannot join tables that live
+in separate databases. If an association would require Rails to join tables
+that live in different databases, the query cannot be sent as a single SQL join.
 
 For `has_many :through` and `has_one :through` associations, you can pass
 `disable_joins: true` to tell Rails to load the association with separate
@@ -1093,14 +1109,32 @@ There are some tradeoffs to be aware of with this option:
    lazy. To load `treats` in `@dog.treats`, Rails already needs to know what
    SQL should be generated.
 
+The same limit applies to any query that builds one SQL statement across both
+databases, such as:
+
+* `joins`, `eager_load`, `where.associated`, and `where.missing` on `Dog`'s
+  `humans` association.
+* `includes` when the query also references the included table, for example
+  with `references` or a `where` condition on it.
+* Subqueries such as `Dog.where(id: Human.select(:dog_id))`.
+
+`preload` works, because it loads each association with a separate query on
+that association's own connection. For the other cases, load one side first and
+pass its IDs to the other query:
+
+```ruby
+dog_ids = Human.where(name: "Alice").pluck(:dog_id)
+Dog.where(id: dog_ids)
+```
+
 ## Schema Caching
 
 Schema caching stores a snapshot of database table and column metadata. Rails
 uses this information for features like attribute type casting, query generation,
-and dynamically defining model attributes. Without schema caching, Rails may
-need to query the database for schema information each time a connection is
-established. By loading this metadata from the cache instead, applications can
-reduce unnecessary database queries and improve boot and connection performance.
+and dynamically defining model attributes. Without schema caching, Rails
+queries the database for a table's schema the first time a model uses it, once
+per table per process, not per connection. By loading this metadata from the
+cache instead, applications can avoid those queries after boot.
 
 In a multiple database application, each database should use its own schema
 cache file. By default, the primary database uses `db/schema_cache.yml`, and
