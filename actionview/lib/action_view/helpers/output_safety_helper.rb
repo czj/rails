@@ -38,7 +38,7 @@ module ActionView # :nodoc:
       def safe_join(array, sep = nil)
         sep = ERB::Util.unwrapped_html_escape(sep)
 
-        array.flatten.map! { |i| ERB::Util.unwrapped_html_escape(i) }.join(sep).html_safe
+        array.flatten.map! { |i| ERB::Util.unwrapped_html_escape(i) }.join(sep).freeze.html_safe
       end
 
       # Converts the array to a comma-separated sentence where the last element is

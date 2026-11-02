@@ -1748,7 +1748,7 @@ module ActionView
           tag_builder
         else
           ensure_valid_html5_tag_name(name)
-          "<#{name}#{tag_builder.tag_options(options, escape) if options}#{open ? ">" : " />"}".html_safe
+          "<#{name}#{tag_builder.tag_options(options, escape) if options}#{open ? ">" : " />"}".freeze.html_safe
         end
       end
 
@@ -1821,7 +1821,7 @@ module ActionView
         tokens.uniq!
 
         # Inlined safe_join: the tokens are already a flat array.
-        tokens.map! { |token| ERB::Util.unwrapped_html_escape(token) }.join(" ").html_safe
+        tokens.map! { |token| ERB::Util.unwrapped_html_escape(token) }.join(" ").freeze.html_safe
       end
       alias_method :class_names, :token_list
 
@@ -1842,7 +1842,7 @@ module ActionView
       # ```
       def cdata_section(content)
         splitted = content.to_s.gsub(/\]\]>/, "]]]]><![CDATA[>")
-        "<![CDATA[#{splitted}]]>".html_safe
+        "<![CDATA[#{splitted}]]>".freeze.html_safe
       end
 
       # Returns an escaped version of `html` without affecting existing escaped entities.
