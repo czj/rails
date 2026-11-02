@@ -596,7 +596,7 @@ module ActiveSupport
 
     # Returns the current date in this time zone.
     def today
-      time = time_now.getutc
+      time = time_now.utc
       if utc?
         time.to_date
       else
