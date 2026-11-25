@@ -26,6 +26,7 @@ module ActiveSupport
   #         format: event.payload[:format]
   #       )
   #     end
+  #     emits :start_processing, "controller.request_started"
   #   end
   # end
   # ```
@@ -33,6 +34,11 @@ module ActiveSupport
   # After configured, whenever a `"start_processing.action_controller"` notification is published,
   # it will properly dispatch the event (`ActiveSupport::Notifications::Event`) to the `start_processing` method.
   # The subscriber can then emit a structured event via the `emit_event` method.
+  #
+  # Each handler declares the one event it emits with `emits`, or that it only
+  # emits debug events with `debug_only`. Its notification is then skipped
+  # while no event reporter subscriber would consume that event. A handler
+  # without a declaration always runs.
   class StructuredEventSubscriber < Subscriber
     class_attribute :debug_methods, instance_accessor: false, default: [] # :nodoc:
     class_attribute :emitted_events, instance_accessor: false, default: {}.freeze # :nodoc:
@@ -47,6 +53,13 @@ module ActiveSupport
         result = super
         set_silenced_events
         result
+      end
+
+      # Handlers declaring neither the event they emit (+emits+) nor that they
+      # only emit debug events (+debug_only+). Every framework handler declares
+      # one or the other.
+      def undeclared_handlers # :nodoc:
+        public_instance_methods(false) - debug_methods - emitted_events.keys
       end
 
       private

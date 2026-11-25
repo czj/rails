@@ -240,5 +240,9 @@ module ActionController
         assert(event[:payload][:stacktrace].find { |line| line.include?("structured_event_subscriber_test.rb:51") })
       end
     end
+
+    def test_every_handler_declares_its_event
+      assert_empty ActionController::StructuredEventSubscriber.undeclared_handlers
+    end
   end
 end

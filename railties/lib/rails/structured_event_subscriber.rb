@@ -13,6 +13,7 @@ module Rails
         deprecation_horizon: event.payload[:deprecation_horizon],
       )
     end
+    emits :deprecation, "rails.deprecation"
   end
 end
 

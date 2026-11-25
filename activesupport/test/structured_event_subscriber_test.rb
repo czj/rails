@@ -246,6 +246,23 @@ class StructuredEventSubscriberTest < ActiveSupport::TestCase
     EmittingSubscriber.detach_from :other
   end
 
+  def test_undeclared_handlers
+    subscriber_class = Class.new(ActiveSupport::StructuredEventSubscriber) do
+      def declared(event); end
+      emits :declared, "test.declared"
+
+      def debug(event); end
+      debug_only :debug
+
+      def undeclared(event); end
+
+      private
+        def helper; end
+    end
+
+    assert_equal [:undeclared], subscriber_class.undeclared_handlers
+  end
+
   def test_emits_does_not_leak_across_subclasses
     base_events = ActiveSupport::StructuredEventSubscriber.emitted_events
 

@@ -128,6 +128,7 @@ module ActiveJob
         exception_message: exception&.message
       )
     end
+    emits :enqueue_retry, "active_job.retry_scheduled"
 
     def retry_stopped(event)
       job = event.payload[:job]
@@ -141,6 +142,7 @@ module ActiveJob
         exception_message: exception.message
       )
     end
+    emits :retry_stopped, "active_job.retry_stopped"
 
     def discard(event)
       job = event.payload[:job]
@@ -153,6 +155,7 @@ module ActiveJob
         exception_message: exception.message
       )
     end
+    emits :discard, "active_job.discarded"
 
     def interrupt(event)
       job = event.payload[:job]
@@ -166,6 +169,7 @@ module ActiveJob
         reason: reason,
       )
     end
+    emits :interrupt, "active_job.interrupt"
 
     def resume(event)
       job = event.payload[:job]
@@ -177,6 +181,7 @@ module ActiveJob
         description: description,
       )
     end
+    emits :resume, "active_job.resume"
 
     def step_skipped(event)
       job = event.payload[:job]
@@ -188,6 +193,7 @@ module ActiveJob
         step: step.name,
       )
     end
+    emits :step_skipped, "active_job.step_skipped"
 
     def step_started(event)
       job = event.payload[:job]
@@ -201,6 +207,7 @@ module ActiveJob
         resumed: step.resumed?,
       )
     end
+    emits :step_started, "active_job.step_started"
 
     def step(event)
       job = event.payload[:job]
@@ -222,6 +229,7 @@ module ActiveJob
 
       emit_event("active_job.step", payload)
     end
+    emits :step, "active_job.step"
   end
 end
 

@@ -392,6 +392,8 @@ class ACLogSubscriberTest < ActionController::TestCase
     emitted_events.each do |method, name|
       assert ActionController::StructuredEventSubscriber.public_method_defined?(method), "#{method} is not a handler"
       assert_equal "action_controller", name.split(".").first, name
+      # Open redirects are logged by Redirecting itself, the event is only for other subscribers.
+      next if name == "action_controller.open_redirect"
       assert ActionController::LogSubscriber.log_levels.key?(ActionController::LogSubscriber.event_method_for(name)), "#{name} is not logged"
     end
   end
